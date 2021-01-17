@@ -10,6 +10,6 @@ PICO_DOWN_BUTTON_ID   = 16
 class PicoControl(hass.Hass):
     def initialize(self):
 
-        self.log_notify("Pico Control Initialized")
+        self.log("Pico Control Initialized")
         
 
