@@ -64,9 +64,13 @@ class PicoControl(hass.Hass):
 
   def get_average_brightness(self, lights):
     def get_brightness(light):
-      return int(self.get_state(light, attribute='brightness'))
+      brightness = self.get_state(light, attribute='brightness')
+      if isinstance(brightness, int):
+        return self.get_state(light, attribute='brightness')
+      else:
+        return None
 
-    brightnesses = list(map(get_brightness, lights))
+    brightnesses = [brightness for brightness in list(map(get_brightness, lights)) if isinstance(brightness, int)]
     return round(sum(brightnesses) / len(brightnesses))
 
   def set_brightness(self, lights, brightness):
