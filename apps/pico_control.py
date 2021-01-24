@@ -62,7 +62,7 @@ class PicoControl(hass.Hass):
     else:
       return []
 
-  def get_average_brightness(self, lights):
+  def get_average_brightness(self, entity):
     def get_brightness(light):
       brightness = self.get_state(light, attribute='brightness')
       if isinstance(brightness, int):
@@ -70,29 +70,26 @@ class PicoControl(hass.Hass):
       else:
         return None
 
+    lights = self.get_light_entities(entity)
     brightnesses = [brightness for brightness in list(map(get_brightness, lights)) if isinstance(brightness, int)]
     return round(sum(brightnesses) / len(brightnesses))
-
-  def set_brightness(self, lights, brightness):
-    for light in lights:
-      self.turn_on(light, brightness=str(brightness))
 
   def adjust_brightness(self, direction):
     activated_button = PICO_UP_BUTTON_ID if direction == 'up' else PICO_DOWN_BUTTON_ID
     entity           = self.args['entity']
-    lights           = self.get_light_entities(entity)
     sensor           = self.args['sensor']
     min_brightness   = self.args['min_brightness']
     max_brightness   = self.args['max_brightness']
     dim_delay        = self.args['dim_delay']
     dim_interval     = self.args['dim_interval']
 
-    self.turn_on(entity) # Lights must be on first to acquire brightness
+    # Lights must be on first to acquire brightness
+    self.turn_on(entity)
 
     # Try acquiring brightness a few times while lights wait to turn on
     for x in range(0, 5):
       try:
-        brightness = self.get_average_brightness(lights)
+        brightness = self.get_average_brightness(entity)
         break
       except:
         time.sleep(dim_delay)
@@ -106,7 +103,7 @@ class PicoControl(hass.Hass):
       brightness = max_brightness if brightness > max_brightness else brightness
 
       # Set the new brightness
-      self.set_brightness(lights, brightness)
+      self.turn_on(entity, brightness=str(brightness))
 
       time.sleep(dim_delay)
 
