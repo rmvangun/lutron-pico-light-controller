@@ -24,6 +24,10 @@ PICO_CENTER_BUTTON_ID = 2
 PICO_UP_BUTTON_ID     = 8
 PICO_DOWN_BUTTON_ID   = 16
 
+# Defaults
+DEFAULT_DIM_DELAY     = 0.05
+DEFAULT_DIM_INCREMENT = 5
+
 class PicoControl(hass.Hass):
 
   def initialize(self):
@@ -80,8 +84,8 @@ class PicoControl(hass.Hass):
     sensor           = self.args['sensor']
     min_brightness   = self.args['min_brightness']
     max_brightness   = self.args['max_brightness']
-    dim_delay        = self.args['dim_delay']
-    dim_interval     = self.args['dim_interval']
+    dim_delay        = self.args.get('dim_delay', DEFAULT_DIM_DELAY)
+    dim_interval     = self.args.get('dim_interval', DEFAULT_DIM_INCREMENT)
 
     # Lights must be on first to acquire brightness
     self.turn_on(entity)
