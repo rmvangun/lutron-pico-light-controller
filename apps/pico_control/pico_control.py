@@ -6,11 +6,14 @@ from datetime import datetime
 # App to implement Lutron Pico Remote control of lighting
 # Args:
 #
-# sensor: sensor to monitor e.g. sensor.pico0
-# entity: the light or light group to control e.g. light.bulb0
-# brightness_lower: minimum bulb brigtness
-# brightness_upper: maximum bulb brigtness
-#
+# sensor                       : Sensor to monitor e.g. sensor.pico0
+# entity                       : The light or light group to control e.g. light.bulb0
+# input_number                 : An input number used to store a favorite brightness persistently; optional
+# favorite_long_press_duration : Number of seconds the favorite button must be held to qualify as a "long press"; default 3
+# min_brightness               : Minimum bulb brigtness
+# max_brightness               : Maximum bulb brigtness
+# dim_delay                    : The seconds to wait between each incremental brightness change while dimming; default 0.05
+# dim_interval                 : The incremental change in brightness while dimming; default 5
 #
 # Release Notes
 #
