@@ -1,5 +1,6 @@
 import hassapi as hass
 import time
+from datetime import datetime
 
 #
 # App to implement Lutron Pico Remote control of lighting
@@ -19,28 +20,29 @@ import time
 # State IDs
 PICO_IDLE_ID          = 0
 PICO_ON_BUTTON_ID     = 1
-PICO_OFF_BUTTON_ID    = 4
 PICO_CENTER_BUTTON_ID = 2
+PICO_OFF_BUTTON_ID    = 4
 PICO_UP_BUTTON_ID     = 8
 PICO_DOWN_BUTTON_ID   = 16
 
 # Defaults
-DEFAULT_DIM_DELAY     = 0.05
-DEFAULT_DIM_INCREMENT = 5
+DEFAULT_DIM_DELAY                    = 0.05
+DEFAULT_DIM_INCREMENT                = 5
+DEFAULT_FAVORITE_LONG_PRESS_DURATION = 3
 
 class PicoControl(hass.Hass):
 
   def initialize(self):
     self.listen_state(self.state_change, self.args['sensor'])
 
-  def noop(self):
-    pass
-
   def on(self):
     self.turn_on(self.args['entity'])
 
   def off(self):
     self.turn_off(self.args['entity'])
+
+  def center(self):
+    self.favorite()
 
   def up(self):
     self.adjust_brightness('up')
@@ -111,13 +113,45 @@ class PicoControl(hass.Hass):
 
       time.sleep(dim_delay)
 
+  def favorite(self):
+    entity              = self.args['entity']
+    sensor              = self.args['sensor']
+    input_number        = self.args.get('input_number', False)
+    long_press_duration = self.args.get('favorite_long_press_duration', DEFAULT_FAVORITE_LONG_PRESS_DURATION)
+    min_brightness      = self.args['min_brightness']
+    max_brightness      = self.args['max_brightness']
+    start_time          = datetime.now()
+
+    # If input_number was given, perform long press store routine
+    if input_number:
+
+      # Count the duration in seconds of the long press
+      while int(self.get_state(sensor)) == PICO_CENTER_BUTTON_ID:
+        time.sleep(0.01)
+      press_duration = (datetime.now() - start_time).total_seconds()
+
+      # Store the current brightness
+      if press_duration >= long_press_duration:
+        brightness = self.get_average_brightness(entity)
+        self.set_value(input_number, brightness)
+
+      # Set the brightness to the stored value
+      else:
+        brightness = int(float(self.get_state(input_number)))
+        self.turn_on(entity, brightness=str(brightness))
+
+    # Otherwise, just set a median brightness
+    else:
+      brightness = round((max_brightness - min_brightness) / 2 + min_brightness)
+      self.turn_on(entity, brightness=str(brightness))
+
   def state_change(self, entity, attribute, old, new, kwargs):
     self.pico_actions[new](self)
 
   pico_actions = {
     '0'  : stop,
     '1'  : on,
-    '2'  : noop,
+    '2'  : center,
     '4'  : off,
     '8'  : up,
     '16' : down
