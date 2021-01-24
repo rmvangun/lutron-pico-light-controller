@@ -32,8 +32,16 @@ DEFAULT_FAVORITE_LONG_PRESS_DURATION = 3
 
 class PicoControl(hass.Hass):
 
+  ##############
+  # Initialize #
+  ##############
+
   def initialize(self):
     self.listen_state(self.state_change, self.args['sensor'])
+
+  ##################
+  # Button Actions #
+  ##################
 
   def on(self):
     self.turn_on(self.args['entity'])
@@ -53,41 +61,30 @@ class PicoControl(hass.Hass):
   def stop(self):
     pass
 
-  def get_light_entities(self, entity):
-    entity_type = entity.split('.')[0]
+  def state_change(self, entity, attribute, old, new, kwargs):
+      self.pico_actions[new](self)
 
-    # Just add a single light to the list if the entity is a light
-    if entity_type == 'light':
-      return [entity]
-    
-    # Get all lights in the group
-    elif entity_type == 'group':
-      return [match for match in self.get_state(entity, attribute = 'all')['attributes']['entity_id'] if match.startswith('light.')]
+  pico_actions = {
+    '0'  : stop,
+    '1'  : on,
+    '2'  : center,
+    '4'  : off,
+    '8'  : up,
+    '16' : down
+  }
 
-    # Return empty list
-    else:
-      return []
-
-  def get_average_brightness(self, entity):
-    def get_brightness(light):
-      brightness = self.get_state(light, attribute='brightness')
-      if isinstance(brightness, int):
-        return self.get_state(light, attribute='brightness')
-      else:
-        return None
-
-    lights = self.get_light_entities(entity)
-    brightnesses = [brightness for brightness in list(map(get_brightness, lights)) if isinstance(brightness, int)]
-    return round(sum(brightnesses) / len(brightnesses))
+  ###########
+  # Dimming #
+  ###########
 
   def adjust_brightness(self, direction):
-    activated_button = PICO_UP_BUTTON_ID if direction == 'up' else PICO_DOWN_BUTTON_ID
     entity           = self.args['entity']
     sensor           = self.args['sensor']
     min_brightness   = self.args['min_brightness']
     max_brightness   = self.args['max_brightness']
     dim_delay        = self.args.get('dim_delay', DEFAULT_DIM_DELAY)
     dim_interval     = self.args.get('dim_interval', DEFAULT_DIM_INCREMENT)
+    activated_button = PICO_UP_BUTTON_ID if direction == 'up' else PICO_DOWN_BUTTON_ID
 
     # Lights must be on first to acquire brightness
     self.turn_on(entity)
@@ -112,6 +109,10 @@ class PicoControl(hass.Hass):
       self.turn_on(entity, brightness=str(brightness))
 
       time.sleep(dim_delay)
+
+  ############
+  # Favorite #
+  ############
 
   def favorite(self):
     entity              = self.args['entity']
@@ -145,14 +146,33 @@ class PicoControl(hass.Hass):
       brightness = round((max_brightness - min_brightness) / 2 + min_brightness)
       self.turn_on(entity, brightness=str(brightness))
 
-  def state_change(self, entity, attribute, old, new, kwargs):
-    self.pico_actions[new](self)
+  #############
+  # Utilities #
+  #############
 
-  pico_actions = {
-    '0'  : stop,
-    '1'  : on,
-    '2'  : center,
-    '4'  : off,
-    '8'  : up,
-    '16' : down
-  }
+  def get_light_entities(self, entity):
+    entity_type = entity.split('.')[0]
+
+    # Return a single light entity
+    if entity_type == 'light':
+      return [entity]
+    
+    # Return all light entities in a group
+    elif entity_type == 'group':
+      return [match for match in self.get_state(entity, attribute = 'all')['attributes']['entity_id'] if match.startswith('light.')]
+
+    # Return empty list
+    else:
+      return []
+
+  def get_average_brightness(self, entity):
+    def get_brightness(light):
+      brightness = self.get_state(light, attribute='brightness')
+      if isinstance(brightness, int):
+        return self.get_state(light, attribute='brightness')
+      else:
+        return None
+
+    lights = self.get_light_entities(entity)
+    brightnesses = [brightness for brightness in list(map(get_brightness, lights)) if isinstance(brightness, int)]
+    return round(sum(brightnesses) / len(brightnesses))
