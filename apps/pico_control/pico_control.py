@@ -40,6 +40,7 @@ class PicoControl(hass.Hass):
   ##############
 
   def initialize(self):
+    self.validate()
     self.listen_state(self.state_change, self.args['sensor'])
 
   ##################
@@ -179,3 +180,45 @@ class PicoControl(hass.Hass):
     lights = self.get_light_entities(entity)
     brightnesses = [brightness for brightness in list(map(get_brightness, lights)) if isinstance(brightness, int)]
     return round(sum(brightnesses) / len(brightnesses))
+
+  ####################
+  # Input Validation #
+  ####################
+
+  def validate(self):
+
+    # sensor
+    if type(self.args.get('sensor', False)) != str:
+      raise ValueError('sensor must be a defined string')
+    if self.args['sensor'].split('.')[0] != 'sensor':
+      raise ValueError('sensor is invalid, example: sensor.my_pico')
+
+    # entity
+    if type(self.args.get('entity', False)) != str:
+      raise ValueError('entity must be a defined string')
+    if self.args['entity'].split('.')[0] != 'light' and self.args['entity'].split('.')[0] != 'group':
+      raise ValueError('entity is invalid, example: light.my_light or group.my_lights')
+
+    # input_number
+    if self.args.get('input_number', False) and self.args['input_number'].split('.')[0] != 'input_number':
+      raise ValueError('input_number is invalid, example: input_number.my_favorite')
+
+    # favorite_long_press_duration
+    if self.args.get('favorite_long_press_duration', False) and (type(self.args['favorite_long_press_duration']) != int or type(self.args['favorite_long_press_duration']) != float):
+      raise ValueError('favorite_long_press_duration must be a number')
+
+    # min_brightness
+    if type(self.args.get('min_brightness', False)) != int:
+      raise ValueError('min_brightness must be a defined integer')
+
+    # max_brightness
+    if type(self.args.get('max_brightness', False)) != int:
+      raise ValueError('max_brightness must be a defined integer')
+
+    # dim_delay
+    if self.args.get('dim_delay', False) and (type(self.args['dim_delay']) != int or type(self.args['dim_delay']) != float):
+      raise ValueError('dim_delay must be a number')
+
+    # dim_interval
+    if self.args.get('dim_interval', False) and type(self.args['dim_interval']) != int:
+      raise ValueError('dim_interval must be an integer')
