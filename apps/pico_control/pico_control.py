@@ -48,10 +48,10 @@ class PicoControl(hass.Hass):
   ##################
 
   def on(self):
-    self.turn_on(self.args['entity'])
+    self.turn_on(self.args['entity'], transition=0)
 
   def off(self):
-    self.turn_off(self.args['entity'])
+    self.turn_off(self.args['entity'], transition=0)
 
   def center(self):
     self.favorite()
@@ -91,7 +91,7 @@ class PicoControl(hass.Hass):
     activated_button = PICO_UP_BUTTON_ID if direction == 'up' else PICO_DOWN_BUTTON_ID
 
     # Lights must be on first to acquire brightness
-    self.turn_on(entity)
+    self.turn_on(entity, transition=0)
 
     # Try acquiring brightness a few times while lights wait to turn on
     for x in range(0, 5):
@@ -110,7 +110,7 @@ class PicoControl(hass.Hass):
       brightness = max_brightness if brightness > max_brightness else brightness
 
       # Set the new brightness
-      self.turn_on(entity, brightness=str(brightness))
+      self.turn_on(entity, brightness=str(brightness), transition=0)
 
       time.sleep(dim_delay)
 
@@ -143,12 +143,12 @@ class PicoControl(hass.Hass):
       # Set the brightness to the stored value
       else:
         brightness = int(float(self.get_state(input_number)))
-        self.turn_on(entity, brightness=str(brightness))
+        self.turn_on(entity, brightness=str(brightness), transition=0)
 
     # Otherwise, just set a median brightness
     else:
       brightness = round((max_brightness - min_brightness) / 2 + min_brightness)
-      self.turn_on(entity, brightness=str(brightness))
+      self.turn_on(entity, brightness=str(brightness), transition=0)
 
   #############
   # Utilities #
