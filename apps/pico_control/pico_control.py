@@ -82,6 +82,7 @@ class PicoControl(hass.Hass):
   ###########
 
   def adjust_brightness(self, direction):
+    brightness       = 0
     entity           = self.args['entity']
     sensor           = self.args['sensor']
     min_brightness   = self.args['min_brightness']
@@ -96,14 +97,14 @@ class PicoControl(hass.Hass):
     # Try acquiring brightness a few times while lights wait to turn on
     for x in range(0, 5):
       try:
-        brightness = self.get_average_brightness(entity)
+        brightness = self.get_state(entity, attribute='brightness')
         break
       except:
         time.sleep(dim_delay)
 
     # Continue adjusting brightness while up or down button is pressed
     while int(self.get_state(sensor)) == activated_button:
-      
+
       # Determine next brightness setting
       brightness = brightness + dim_interval if direction == 'up' else brightness - dim_interval
       brightness = min_brightness if brightness < min_brightness else brightness
@@ -137,7 +138,7 @@ class PicoControl(hass.Hass):
 
       # Store the current brightness
       if press_duration >= long_press_duration:
-        brightness = self.get_average_brightness(entity)
+        brightness = self.get_state(entity, attribute='brightness')
         self.set_value(input_number, brightness)
 
       # Set the brightness to the stored value
@@ -149,37 +150,6 @@ class PicoControl(hass.Hass):
     else:
       brightness = round((max_brightness - min_brightness) / 2 + min_brightness)
       self.turn_on(entity, brightness=str(brightness), transition=0)
-
-  #############
-  # Utilities #
-  #############
-
-  def get_light_entities(self, entity):
-    entity_type = entity.split('.')[0]
-
-    # Return a single light entity
-    if entity_type == 'light':
-      return [entity]
-    
-    # Return all light entities in a group
-    elif entity_type == 'group':
-      return [match for match in self.get_state(entity, attribute = 'all')['attributes']['entity_id'] if match.startswith('light.')]
-
-    # Return empty list
-    else:
-      return []
-
-  def get_average_brightness(self, entity):
-    def get_brightness(light):
-      brightness = self.get_state(light, attribute='brightness')
-      if isinstance(brightness, int):
-        return self.get_state(light, attribute='brightness')
-      else:
-        return None
-
-    lights = self.get_light_entities(entity)
-    brightnesses = [brightness for brightness in list(map(get_brightness, lights)) if isinstance(brightness, int)]
-    return round(sum(brightnesses) / len(brightnesses))
 
   ####################
   # Input Validation #
